@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Доска объявлений России — GDAMICH</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background: #0e1621;
+            min-height: 100vh;
+            padding: 20px;
+            color: #eef4ff;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #C0E0FF, #7CB9FF);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .sub {
+            color: #8e9eae;
+            margin-bottom: 2rem;
+        }
+        
+        .publish-card {
+            background: #1f2c38;
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: #17212b;
+            border: 1px solid #2b3b4c;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #2b9aff;
+        }
+        .btn-primary {
+            background: #2b9aff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: #1f2c38;
+            padding: 1rem;
+            border-radius: 20px;
+        }
+        .filters select, .filters input {
+            width: auto;
+            min-width: 150px;
+        }
+        
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .listing-card {
+            background: #1f2c38;
+            border-radius: 20px;
+            padding: 1.2rem;
+            cursor: pointer;
+            border: 1px solid #2b3b4c;
+        }
+        .listing-card:hover {
+            border-color: #2b9aff;
+        }
+        .listing-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .listing-price {
+            color: #2b9aff;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .listing-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #8e9eae;
+            margin-top: 0.8rem;
+        }
+        .badge {
+            background: #2b3b4c;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #17212b;
+            border-radius: 28px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .close-modal {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #8e9eae;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1rem;
+            color: #6c86a3;
+            font-size: 0.8rem;
+            border-top: 1px solid #2b3b4c;
+        }
+        
+        @media (max-width: 700px) {
+            .form-row { flex-direction: column; }
+            .filters { flex-direction: column; }
+            .filters select, .filters input { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📢 Доска объявлений России</h1>
+    <div class="sub">Покупай, продавай, предлагай услуги — бесплатно</div>
+    
+    <div class="publish-card">
+        <h3 style="margin-bottom: 1rem;">📝 Разместить объявление</h3>
+        <div class="form-row">
+            <input type="text" id="title" placeholder="Заголовок">
+            <select id="category">
+                <option value="Товары">📦 Товары</option>
+                <option value="Услуги">🔧 Услуги</option>
+                <option value="Недвижимость">🏠 Недвижимость</option>
+                <option value="Авто">🚗 Авто</option>
+                <option value="Работа">💼 Работа</option>
+                <option value="Электроника">💻 Электроника</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <input type="text" id="city" placeholder="Город">
+            <input type="number" id="price" placeholder="Цена (₽)">
+        </div>
+        <textarea id="description" rows="3" placeholder="Описание..."></textarea>
+        <input type="text" id="contact" placeholder="Контакт (Telegram / телефон)">
+        <button class="btn-primary" id="publishBtn">📢 Опубликовать</button>
+    </div>
+    
+    <div class="filters">
+        <select id="filterCategory">
+            <option value="">Все категории</option>
+            <option value="Товары">📦 Товары</option>
+            <option value="Услуги">🔧 Услуги</option>
+            <option value="Недвижимость">🏠 Недвижимость</option>
+            <option value="Авто">🚗 Авто</option>
+            <option value="Работа">💼 Работа</option>
+            <option value="Электроника">💻 Электроника</option>
+        </select>
+        <input type="text" id="filterCity" placeholder="Город">
+        <button id="searchBtn" class="btn-primary">🔍 Поиск</button>
+        <button id="resetBtn" style="background: #2b3b4c; border: none; padding: 12px 20px; border-radius: 12px; color: white; cursor: pointer;">Сбросить</button>
+    </div>
+    
+    <div class="listings-grid" id="listingsGrid">
+        <div style="text-align: center; grid-column: 1/-1; padding: 40px;">📡 Загрузка...</div>
+    </div>
+    
+    <footer>🐋 GDAMICH · Будьте осторожны при сделках</footer>
+</div>
+
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" id="closeModalBtn">&times;</span>
+        <h2 id="detailTitle"></h2>
+        <p><strong>💰 Цена:</strong> <span id="detailPrice"></span></p>
+        <p><strong>📍 Город:</strong> <span id="detailCity"></span></p>
+        <p><strong>📂 Категория:</strong> <span id="detailCategory"></span></p>
+        <p><strong>📝 Описание:</strong></p>
+        <p id="detailDescription" style="background: #1f2c38; padding: 12px; border-radius: 12px; margin: 10px 0;"></p>
+        <p><strong>📞 Контакт:</strong> <span id="detailContact"></span></p>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://iiuahjmpszfcgtwapidt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_iFYpqkv4D0qEOj4Dn1X9Nw_OH9d5Bji";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    async function loadListings() {
+        let query = supabase.from('listings').select('*').order('created_at', { ascending: false });
+        const category = document.getElementById('filterCategory').value;
+        const city = document.getElementById('filterCity').value.trim();
+        if (category) query = query.eq('category', category);
+        if (city) query = query.ilike('city', `%${city}%`);
+        const { data } = await query;
+        const grid = document.getElementById('listingsGrid');
+        if (!data || !data.length) {
+            grid.innerHTML = '<div style="text-align: center; grid-column: 1/-1; padding: 40px;">✨ Пока нет объявлений. Будьте первым!</div>';
+            return;
+        }
+        grid.innerHTML = data.map(l => `
+            <div class="listing-card" data-id="${l.id}">
+                <div class="listing-title">${escapeHtml(l.title)}</div>
+                <div class="listing-price">${l.price ? l.price.toLocaleString() + ' ₽' : 'Цена не указана'}</div>
+                <div class="listing-meta">
+                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(l.city || 'Не указан')}</span>
+                    <span class="badge">${escapeHtml(l.category)}</span>
+                </div>
+            </div>
+        `).join('');
+        document.querySelectorAll('.listing-card').forEach(c => c.onclick = () => showDetail(data.find(l => l.id == c.dataset.id)));
+    }
+    
+    function showDetail(l) {
+        document.getElementById('detailTitle').innerText = l.title;
+        document.getElementById('detailPrice').innerHTML = l.price ? l.price.toLocaleString() + ' ₽' : 'Не указана';
+        document.getElementById('detailCity').innerText = l.city || 'Не указан';
+        document.getElementById('detailCategory').innerText = l.category;
+        document.getElementById('detailDescription').innerText = l.description || 'Нет описания';
+        document.getElementById('detailContact').innerText = l.contact || 'Не указан';
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+    
+    async function publish() {
+        const title = document.getElementById('title').value.trim();
+        const category = document.getElementById('category').value;
+        if (!title) { alert("Введите заголовок"); return; }
+        const { error } = await supabase.from('listings').insert([{
+            title, category, city: document.getElementById('city').value.trim(),
+            price: parseInt(document.getElementById('price').value) || null,
+            description: document.getElementById('description').value.trim(),
+            contact: document.getElementById('contact').value.trim()
+        }]);
+        if (error) alert("Ошибка: " + error.message);
+        else {
+            alert("✅ Объявление опубликовано!");
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('city').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('contact').value = '';
+            loadListings();
+        }
+    }
+    
+    function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])) : ''; }
+    
+    document.getElementById('publishBtn').onclick = publish;
+    document.getElementById('searchBtn').onclick = loadListings;
+    document.getElementById('resetBtn').onclick = () => { document.getElementById('filterCategory').value = ''; document.getElementById('filterCity').value = ''; loadListings(); };
+    document.getElementById('closeModalBtn').onclick = () => document.getElementById('detailModal').style.display = 'none';
+    window.onclick = (e) => { if (e.target === document.getElementById('detailModal')) document.getElementById('detailModal').style.display = 'none'; };
+    
+    loadListings();
+</script>
+</body>
+</html>
