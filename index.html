@@ -14,68 +14,73 @@
         body {
             background: #0e1621;
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px;
             color: #eef4ff;
         }
         .container {
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
         }
         h1 {
-            font-size: 2rem;
+            font-size: 1.8rem;
             background: linear-gradient(135deg, #C0E0FF, #7CB9FF);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
             text-align: center;
+            margin-bottom: 0.5rem;
         }
         .sub {
             text-align: center;
             color: #8e9eae;
-            margin-bottom: 2rem;
+            font-size: 0.8rem;
+            margin-bottom: 1.5rem;
         }
-        
         .form-card {
             background: #1f2c38;
             border-radius: 24px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
         }
         input, select, textarea {
             width: 100%;
             padding: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             background: #17212b;
             border: 1px solid #2b3b4c;
             border-radius: 12px;
             color: white;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
         button {
             background: #2b9aff;
             border: none;
-            padding: 12px 24px;
+            padding: 12px;
             border-radius: 12px;
             color: white;
-            cursor: pointer;
             font-weight: bold;
+            cursor: pointer;
+            width: 100%;
         }
         .filters {
             display: flex;
-            gap: 12px;
-            margin-bottom: 2rem;
+            gap: 8px;
+            margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
-        .filters input, .filters select {
-            width: auto;
+        .filters select, .filters input {
             flex: 1;
-            min-width: 150px;
             margin-bottom: 0;
+            padding: 10px;
+        }
+        .filters button {
+            width: auto;
+            padding: 10px 16px;
         }
         .listings {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         .card {
             background: #1f2c38;
@@ -83,16 +88,20 @@
             padding: 1rem;
             border: 1px solid #2b3b4c;
         }
+        .card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+        }
         .price {
             color: #2b9aff;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: bold;
-            margin: 8px 0;
+            margin: 6px 0;
         }
         .meta {
             display: flex;
             gap: 12px;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: #8e9eae;
             margin-top: 8px;
         }
@@ -103,23 +112,28 @@
         }
         .delete-btn {
             background: #ff3b30;
-            padding: 6px 12px;
             margin-top: 10px;
             font-size: 0.8rem;
+            padding: 8px;
+        }
+        .empty {
+            text-align: center;
+            color: #8e9eae;
+            padding: 40px;
         }
         footer {
             text-align: center;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
+            font-size: 0.7rem;
             color: #6c86a3;
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>📢 Доска объявлений GDAMICH</h1>
+    <h1>📢 Доска объявлений</h1>
     <div class="sub">Бесплатно · Без регистрации · Сохраняется в браузере</div>
     
-    <!-- Форма добавления -->
     <div class="form-card">
         <input type="text" id="title" placeholder="Заголовок">
         <select id="category">
@@ -135,31 +149,28 @@
         <button id="addBtn">➕ Добавить объявление</button>
     </div>
     
-    <!-- Фильтры -->
     <div class="filters">
         <select id="filterCat">
-            <option value="">Все категории</option>
-            <option value="Товары">📦 Товары</option>
-            <option value="Услуги">🔧 Услуги</option>
-            <option value="Недвижимость">🏠 Недвижимость</option>
-            <option value="Авто">🚗 Авто</option>
-            <option value="Электроника">💻 Электроника</option>
+            <option value="">Все</option>
+            <option value="Товары">📦</option>
+            <option value="Услуги">🔧</option>
+            <option value="Недвижимость">🏠</option>
+            <option value="Авто">🚗</option>
+            <option value="Электроника">💻</option>
         </select>
         <input type="text" id="filterCity" placeholder="Город">
-        <button id="searchBtn">🔍 Поиск</button>
-        <button id="resetBtn">🔄 Сбросить</button>
+        <button id="searchBtn">🔍</button>
+        <button id="resetBtn" style="background:#2b3b4c;">🔄</button>
     </div>
     
-    <!-- Список объявлений -->
     <div id="listings" class="listings">
-        <div style="text-align: center; grid-column: 1/-1;">📡 Загрузка...</div>
+        <div class="empty">📡 Загрузка...</div>
     </div>
     
     <footer>🐋 GDAMICH · Объявления хранятся в вашем браузере</footer>
 </div>
 
 <script>
-    // Хранилище в localStorage
     let listings = [];
     
     function saveToLocal() {
@@ -171,12 +182,10 @@
         if (saved) {
             listings = JSON.parse(saved);
         } else {
-            // Добавляем тестовые объявления, чтобы было не пусто
             listings = [
-                { id: 1, title: "iPhone 14 Pro", category: "Товары", city: "Москва", price: 70000, desc: "Отличное состояние, полный комплект" },
-                { id: 2, title: "Ремонт компьютеров", category: "Услуги", city: "Санкт-Петербург", price: 1500, desc: "Выезд на дом, настройка, установка ПО" },
-                { id: 3, title: "Сдам квартиру", category: "Недвижимость", city: "Казань", price: 30000, desc: "Центр, новый ремонт, бытовая техника" },
-                { id: 4, title: "Ноутбук Lenovo", category: "Электроника", city: "Новосибирск", price: 45000, desc: "Игровой, 16GB RAM, SSD 512" }
+                { id: 1, title: "iPhone 14 Pro", category: "Товары", city: "Москва", price: 70000, desc: "Отличное состояние" },
+                { id: 2, title: "Ремонт компьютеров", category: "Услуги", city: "СПб", price: 1500, desc: "Выезд на дом" },
+                { id: 3, title: "Сдам квартиру", category: "Недвижимость", city: "Казань", price: 30000, desc: "Центр" }
             ];
             saveToLocal();
         }
@@ -193,7 +202,7 @@
         
         const container = document.getElementById('listings');
         if (filtered.length === 0) {
-            container.innerHTML = '<div style="text-align: center; grid-column: 1/-1;">✨ Нет объявлений. Добавьте первое!</div>';
+            container.innerHTML = '<div class="empty">✨ Нет объявлений. Добавьте первое!</div>';
             return;
         }
         
@@ -205,7 +214,7 @@
                     <span>📍 ${escapeHtml(l.city)}</span>
                     <span class="badge">${escapeHtml(l.category)}</span>
                 </div>
-                <div style="font-size: 0.85rem; margin-top: 8px;">${escapeHtml(l.desc)}</div>
+                <div style="font-size:0.8rem; margin-top:6px;">${escapeHtml(l.desc)}</div>
                 <button class="delete-btn" data-id="${l.id}">🗑️ Удалить</button>
             </div>
         `).join('');
@@ -227,8 +236,10 @@
         const price = parseInt(document.getElementById('price').value) || null;
         const desc = document.getElementById('desc').value.trim();
         
-        if (!title) { alert("Введите заголовок"); return; }
-        if (!city) { alert("Введите город"); return; }
+        if (!title || !city) {
+            alert("Заполните заголовок и город");
+            return;
+        }
         
         const newId = Date.now();
         listings.push({ id: newId, title, category, city, price, desc });
@@ -259,4 +270,4 @@
     loadFromLocal();
 </script>
 </body>
-                </html>
+</html>
