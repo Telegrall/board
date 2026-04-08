@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Доска объявлений — GDAMICH</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -132,7 +133,7 @@
 <body>
 <div class="container">
     <h1>📢 Доска объявлений</h1>
-    <div class="sub">Бесплатно · Без регистрации · Сохраняется в браузере</div>
+    <div class="sub">Бесплатно · Объявления видны всем</div>
     
     <div class="form-card">
         <input type="text" id="title" placeholder="Заголовок">
@@ -167,91 +168,79 @@
         <div class="empty">📡 Загрузка...</div>
     </div>
     
-    <footer>🐋 GDAMICH · Объявления хранятся в вашем браузере</footer>
+    <footer>🐋 GDAMICH · Объявления видны всем пользователям</footer>
 </div>
 
 <script>
-    let listings = [];
+    const SUPABASE_URL = "https://iiuahjmpszfcgtwapidt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_iFYpqkv4D0qEOj4Dn1X9Nw_OH9d5Bji";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    function saveToLocal() {
-        localStorage.setItem('gdamich_listings', JSON.stringify(listings));
-    }
-    
-    function loadFromLocal() {
-        const saved = localStorage.getItem('gdamich_listings');
-        if (saved) {
-            listings = JSON.parse(saved);
-        } else {
-            listings = [
-                { id: 1, title: "iPhone 14 Pro", category: "Товары", city: "Москва", price: 70000, desc: "Отличное состояние" },
-                { id: 2, title: "Ремонт компьютеров", category: "Услуги", city: "СПб", price: 1500, desc: "Выезд на дом" },
-                { id: 3, title: "Сдам квартиру", category: "Недвижимость", city: "Казань", price: 30000, desc: "Центр" }
-            ];
-            saveToLocal();
-        }
-        renderListings();
-    }
-    
-    function renderListings() {
-        const category = document.getElementById('filterCat').value;
-        const city = document.getElementById('filterCity').value.trim().toLowerCase();
+    async function loadListings() {
+        const { data, error } = await supabase
+            .from('board_listings')
+            .select('*')
+            .order('created_at', { ascending: false });
         
-        let filtered = listings;
-        if (category) filtered = filtered.filter(l => l.category === category);
-        if (city) filtered = filtered.filter(l => l.city.toLowerCase().includes(city));
+        if (error) {
+            console.error(error);
+            return;
+        }
         
         const container = document.getElementById('listings');
-        if (filtered.length === 0) {
+        if (!data || data.length === 0) {
             container.innerHTML = '<div class="empty">✨ Нет объявлений. Добавьте первое!</div>';
             return;
         }
         
-        container.innerHTML = filtered.map(l => `
-            <div class="card">
-                <h3>${escapeHtml(l.title)}</h3>
-                <div class="price">${l.price ? l.price.toLocaleString() + ' ₽' : 'Цена не указана'}</div>
+        container.innerHTML = data.map(item => `
+            <div class="card" data-id="${item.id}">
+                <h3>${escapeHtml(item.title)}</h3>
+                <div class="price">${item.price ? item.price.toLocaleString() + ' ₽' : 'Цена не указана'}</div>
                 <div class="meta">
-                    <span>📍 ${escapeHtml(l.city)}</span>
-                    <span class="badge">${escapeHtml(l.category)}</span>
+                    <span>📍 ${escapeHtml(item.city)}</span>
+                    <span class="badge">${escapeHtml(item.category)}</span>
                 </div>
-                <div style="font-size:0.8rem; margin-top:6px;">${escapeHtml(l.desc)}</div>
-                <button class="delete-btn" data-id="${l.id}">🗑️ Удалить</button>
+                <div style="font-size:0.8rem; margin-top:6px;">${escapeHtml(item.description)}</div>
+                <button class="delete-btn" data-id="${item.id}">🗑️ Удалить</button>
             </div>
         `).join('');
         
         document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.onclick = () => {
+            btn.onclick = async () => {
                 const id = parseInt(btn.dataset.id);
-                listings = listings.filter(l => l.id !== id);
-                saveToLocal();
-                renderListings();
+                await supabase.from('board_listings').delete().eq('id', id);
+                loadListings();
             };
         });
     }
     
-    function addListing() {
+    async function addListing() {
         const title = document.getElementById('title').value.trim();
         const category = document.getElementById('category').value;
         const city = document.getElementById('city').value.trim();
         const price = parseInt(document.getElementById('price').value) || null;
-        const desc = document.getElementById('desc').value.trim();
+        const description = document.getElementById('desc').value.trim();
         
         if (!title || !city) {
             alert("Заполните заголовок и город");
             return;
         }
         
-        const newId = Date.now();
-        listings.push({ id: newId, title, category, city, price, desc });
-        saveToLocal();
+        const { error } = await supabase.from('board_listings').insert([{
+            title, category, city, price, description
+        }]);
         
-        document.getElementById('title').value = '';
-        document.getElementById('city').value = '';
-        document.getElementById('price').value = '';
-        document.getElementById('desc').value = '';
-        
-        renderListings();
-        alert("✅ Объявление добавлено!");
+        if (error) {
+            alert("Ошибка: " + error.message);
+        } else {
+            document.getElementById('title').value = '';
+            document.getElementById('city').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('desc').value = '';
+            loadListings();
+            alert("✅ Объявление добавлено!");
+        }
     }
     
     function escapeHtml(str) {
@@ -260,14 +249,49 @@
     }
     
     document.getElementById('addBtn').onclick = addListing;
-    document.getElementById('searchBtn').onclick = renderListings;
+    document.getElementById('searchBtn').onclick = () => {
+        const category = document.getElementById('filterCat').value;
+        const city = document.getElementById('filterCity').value.trim().toLowerCase();
+        
+        let query = supabase.from('board_listings').select('*').order('created_at', { ascending: false });
+        if (category) query = query.eq('category', category);
+        if (city) query = query.ilike('city', `%${city}%`);
+        
+        query.then(({ data }) => {
+            const container = document.getElementById('listings');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="empty">✨ Нет объявлений</div>';
+                return;
+            }
+            container.innerHTML = data.map(item => `
+                <div class="card" data-id="${item.id}">
+                    <h3>${escapeHtml(item.title)}</h3>
+                    <div class="price">${item.price ? item.price.toLocaleString() + ' ₽' : 'Цена не указана'}</div>
+                    <div class="meta">
+                        <span>📍 ${escapeHtml(item.city)}</span>
+                        <span class="badge">${escapeHtml(item.category)}</span>
+                    </div>
+                    <div style="font-size:0.8rem; margin-top:6px;">${escapeHtml(item.description)}</div>
+                    <button class="delete-btn" data-id="${item.id}">🗑️ Удалить</button>
+                </div>
+            `).join('');
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    const id = parseInt(btn.dataset.id);
+                    await supabase.from('board_listings').delete().eq('id', id);
+                    loadListings();
+                };
+            });
+        });
+    };
+    
     document.getElementById('resetBtn').onclick = () => {
         document.getElementById('filterCat').value = '';
         document.getElementById('filterCity').value = '';
-        renderListings();
+        loadListings();
     };
     
-    loadFromLocal();
+    loadListings();
 </script>
 </body>
 </html>
